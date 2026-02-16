@@ -1,0 +1,127 @@
+import javafx.application.Application;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.*;
+import javafx.stage.Stage;
+
+public class Main extends Application {
+
+    private TableView<Student> table;
+    private TextField departmentField, numberField;
+    private ServiceClass service = new ServiceClass();
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+
+    @Override
+    public void start(Stage primaryStage) {
+        primaryStage.setTitle("Student Management");
+
+        // Input fields
+        departmentField = new TextField();
+        departmentField.setPromptText("Department Name");
+        numberField = new TextField();
+        numberField.setPromptText("Number of Students");
+
+        // Buttons
+        Button insertBtn = new Button("Insert");
+        insertBtn.setOnAction(e -> insertStudent());
+
+        Button updateBtn = new Button("Update");
+        updateBtn.setOnAction(e -> updateStudent());
+
+        Button deleteBtn = new Button("Delete");
+        deleteBtn.setOnAction(e -> deleteStudent());
+
+        Button viewBtn = new Button("View All");
+        viewBtn.setOnAction(e -> loadTableData());
+
+        HBox inputBox = new HBox(10, departmentField, numberField, insertBtn, updateBtn, deleteBtn, viewBtn);
+        inputBox.setPadding(new Insets(10));
+
+        // Table
+        table = new TableView<>();
+        TableColumn<Student, Integer> idCol = new TableColumn<>("ID");
+        idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
+
+        TableColumn<Student, String> deptCol = new TableColumn<>("Department Name");
+        deptCol.setCellValueFactory(new PropertyValueFactory<>("departmentName"));
+
+        TableColumn<Student, String> numberCol = new TableColumn<>("Number of Students");
+        numberCol.setCellValueFactory(new PropertyValueFactory<>("numberOfStudent"));
+
+        table.getColumns().addAll(idCol, deptCol, numberCol);
+
+        VBox root = new VBox(10, inputBox, table);
+        root.setPadding(new Insets(10));
+
+        Scene scene = new Scene(root, 800, 400);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+
+        loadTableData();
+    }
+
+    private void insertStudent() {
+        String department = departmentField.getText();
+        String number = numberField.getText();
+        if (!department.isEmpty() && !number.isEmpty()) {
+            if (service.insertDB(department, number)) {
+                showAlert("Inserted successfully.");
+                loadTableData();
+            } else {
+                showAlert("Insertion failed.");
+            }
+        } else {
+            showAlert("Please fill all fields.");
+        }
+    }
+
+    private void updateStudent() {
+        Student selected = table.getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            String department = departmentField.getText();
+            String number = numberField.getText();
+            if (service.updateDB(selected.getId(), department, number)) {
+                showAlert("Updated successfully.");
+                loadTableData();
+            } else {
+                showAlert("Update failed.");
+            }
+        } else {
+            showAlert("Select a row to update.");
+        }
+    }
+
+    private void deleteStudent() {
+        Student selected = table.getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            if (service.deleteDB(selected.getId())) {
+                showAlert("Deleted successfully.");
+                loadTableData();
+            } else {
+                showAlert("Delete failed.");
+            }
+        } else {
+            showAlert("Select a row to delete.");
+        }
+    }
+
+    private void loadTableData() {
+        ObservableList<Student> data = FXCollections.observableArrayList(service.viewDB());
+        table.setItems(data);
+    }
+
+    private void showAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+}
+
+
